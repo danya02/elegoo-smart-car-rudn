@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "cargo",
+            "command": "build",
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "group": "build",
+            "label": "rust: cargo build",
+            "options": {
+                "cwd": "${workspaceFolder}/elegoo-smart-car-rudn"
+            }
+        },
+        {
+            "type": "cargo",
+            "command": "run",
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "group": "build",
+            "label": "rust: cargo run",
+            "options": {
+                "cwd": "${workspaceFolder}/elegoo-smart-car-rudn"
+            }
+        }
+    ]
+}
