@@ -1,7 +1,11 @@
 #![no_std]
 #![no_main]
 
+use arduino_hal::prelude::*;
 use panic_halt as _;
+
+mod l287n_motor_driver;
+use l287n_motor_driver::{MotorChassis, ChassisDirection};
 
 #[arduino_hal::entry]
 fn main() -> ! {
@@ -18,10 +22,41 @@ fn main() -> ! {
      * examples available.
      */
 
+    let enable_a = pins.d5.into_output().downgrade();
+    let enable_b = pins.d6.into_output().downgrade();
+    let in1 = pins.d7.into_output().downgrade();
+    let in2 = pins.d8.into_output().downgrade();
+    let in3 = pins.d9.into_output().downgrade();
+    let in4 = pins.d11.into_output().downgrade();
+
+    let mut chassis = MotorChassis::new(
+        enable_a,
+        enable_b,
+        in1,
+        in2,
+        in3,
+        in4,
+    );
+
     let mut led = pins.d13.into_output();
 
+    let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
+
+    chassis.set_enabled(true, true);
     loop {
+        
+        ufmt::uwriteln!(&mut serial, "Moving\n").void_unwrap();
         led.toggle();
+        chassis.set_direction(ChassisDirection::Forward);
+        arduino_hal::delay_ms(1000);
+        chassis.set_direction(ChassisDirection::Backward);
+        arduino_hal::delay_ms(1000);
+
+        ufmt::uwriteln!(&mut serial, "Turning\n").void_unwrap();
+        led.toggle();
+        chassis.set_direction(ChassisDirection::Left);
+        arduino_hal::delay_ms(1000);
+        chassis.set_direction(ChassisDirection::Right);
         arduino_hal::delay_ms(1000);
     }
 }
