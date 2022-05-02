@@ -1,11 +1,15 @@
 #![no_std]
 #![no_main]
+#![feature(abi_avr_interrupt)]
 
 use arduino_hal::prelude::*;
 use panic_halt as _;
 
 mod l287n_motor_driver;
 use l287n_motor_driver::{MotorChassis, ChassisDirection};
+use embedded_hal::serial::Read;
+
+mod clock;
 
 #[arduino_hal::entry]
 fn main() -> ! {
@@ -43,6 +47,8 @@ fn main() -> ! {
     let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
 
     chassis.set_enabled(true, true);
+
+    /*
     loop {
         
         ufmt::uwriteln!(&mut serial, "Moving\n").void_unwrap();
@@ -59,4 +65,18 @@ fn main() -> ! {
         chassis.set_direction(ChassisDirection::Right);
         arduino_hal::delay_ms(1000);
     }
+    */
+
+    clock::millis_init(dp.TC0);
+
+    // Enable interrupts globally
+    unsafe { avr_device::interrupt::enable() };
+
+    // Wait for a character and print current time once it is received
+    loop {
+        let b = nb::block!(serial.read()).void_unwrap();
+
+        let time = clock::millis();
+        ufmt::uwriteln!(&mut serial, "Got {} after {} ms!\r", b, time).void_unwrap();
+    }        
 }
