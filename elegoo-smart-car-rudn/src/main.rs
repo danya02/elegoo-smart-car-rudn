@@ -1,15 +1,23 @@
 #![no_std]
 #![no_main]
 #![feature(abi_avr_interrupt)]
+#![allow(dead_code)]
 
+#[allow(unused_imports)]
 use arduino_hal::prelude::*;
-use panic_halt as _;
-
-mod l287n_motor_driver;
-use l287n_motor_driver::{MotorChassis, ChassisDirection};
+#[allow(unused_imports)]
 use embedded_hal::serial::Read;
 
+
+mod l287n_motor_driver;
+#[allow(unused_imports)]
+use l287n_motor_driver::{MotorChassis, ChassisDirection};
+
 mod clock;
+
+mod hc_sr04_distance_sensor;
+
+mod panic;
 
 #[arduino_hal::entry]
 fn main() -> ! {
@@ -44,6 +52,13 @@ fn main() -> ! {
 
     let mut led = pins.d13.into_output();
 
+
+    clock::millis_init(dp.TC0);
+
+    // Enable interrupts globally
+    unsafe { avr_device::interrupt::enable() };
+
+    #[allow(unused_variables)]
     let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
 
     chassis.set_enabled(true, true);
@@ -67,16 +82,22 @@ fn main() -> ! {
     }
     */
 
-    clock::millis_init(dp.TC0);
+    let dist_trigger_pin = pins.a5.into_output().downgrade();
+    let dist_echo_pin = pins.a4.into_pull_up_input().downgrade().forget_imode();
 
-    // Enable interrupts globally
-    unsafe { avr_device::interrupt::enable() };
+    let mut dist_sensor = hc_sr04_distance_sensor::HC_SR04::new(
+        dp.TC1,
+        dist_trigger_pin,
+        dist_echo_pin,
+    );
 
-    // Wait for a character and print current time once it is received
+    ufmt::uwriteln!(&mut serial, "Running!").void_unwrap();
+
+
     loop {
-        let b = nb::block!(serial.read()).void_unwrap();
-
-        let time = clock::millis();
-        ufmt::uwriteln!(&mut serial, "Got {} after {} ms!\r", b, time).void_unwrap();
-    }        
+        let dist = dist_sensor.get_distance();
+        ufmt::uwriteln!(&mut serial, "Distance: {}", dist).void_unwrap();
+        led.toggle();
+        arduino_hal::delay_ms(1000);
+    }
 }
