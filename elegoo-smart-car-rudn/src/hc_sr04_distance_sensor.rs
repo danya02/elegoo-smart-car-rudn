@@ -3,8 +3,8 @@ use arduino_hal::port::mode::{Input, Output};
 
 use ufmt::derive::uDebug;
 use ufmt::uDisplay;
-use ufmt::uwrite;
 
+#[allow(non_camel_case_types)]
 pub struct HC_SR04 {
     trigger_pin: Pin<Output>,
     echo_pin: Pin<Input>,
@@ -28,14 +28,19 @@ impl Distance {
         Self { ticks }
     }
 
-    pub fn to_mm(&self) -> u16 {
+    pub fn to_um(&self) -> u64 {
         // 1 tick = 4µs = 1.3611mm
         // https://www.wolframalpha.com/input?i=4%C2%B5s+speed+of+sound
-        // divide by 2 -> 0.68055mm
+        // divide by 2 -> 0.68055mm = 6805.5µm ~~ 6805µm
 
-        // TODO: actually convert this to mm, there are problems with floating point numbers!!
+        // NOTE: we would prefer float values, but any program using them will halt at startup.
 
-        self.ticks
+        let ums: u64 = self.ticks as u64 * 6805;
+        ums
+    }
+    
+    pub fn to_mm(&self) -> u64 {
+        self.to_um() / 1000
     }
 }
 
