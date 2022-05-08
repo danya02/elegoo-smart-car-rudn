@@ -19,6 +19,7 @@ mod clock;
 mod hc_sr04_distance_sensor;
 mod servo;
 mod panic;
+mod line_tracker;
 
 #[arduino_hal::entry]
 fn main() -> ! {
@@ -95,17 +96,27 @@ fn main() -> ! {
     ufmt::uwriteln!(&mut serial, "Running!").void_unwrap();
 
     let mut servo = Servo::new(pins.d3.into_output());
+    
+    let mut line_tracker = line_tracker::LineTracker::new(
+        pins.d2.into_floating_input().forget_imode().downgrade(),
+        pins.d4.into_floating_input().forget_imode().downgrade(),
+        pins.d10.into_floating_input().forget_imode().downgrade()
+    );
 
     loop {
 //        let dist = dist_sensor.get_distance();
 //        ufmt::uwriteln!(&mut serial, "Distance: {}", dist).void_unwrap();
 //        led.toggle();
 //        arduino_hal::delay_ms(1000);
-        for i in [0, 90, 180, 90].iter() {
-            servo.set_angle(*i);
-            ufmt::uwriteln!(&mut serial, "Angle: {}", i).void_unwrap();
-            arduino_hal::delay_ms(1000);
-        }
+//        for i in [0, 90, 180, 90].iter() {
+//            servo.set_angle(*i);
+//            ufmt::uwriteln!(&mut serial, "Angle: {}", i).void_unwrap();
+//            arduino_hal::delay_ms(1000);
+//        }
+
+        let line_pos = line_tracker.measure_full();
+        ufmt::uwriteln!(&mut serial, "Line: {:?}", line_pos).void_unwrap();
+        arduino_hal::delay_ms(1000);
 
     }
 }
