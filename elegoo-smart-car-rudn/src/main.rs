@@ -12,11 +12,12 @@ use embedded_hal::serial::Read;
 mod l287n_motor_driver;
 #[allow(unused_imports)]
 use l287n_motor_driver::{MotorChassis, ChassisDirection};
+use servo::Servo;
 
 mod clock;
 
 mod hc_sr04_distance_sensor;
-
+mod servo;
 mod panic;
 
 #[arduino_hal::entry]
@@ -93,11 +94,18 @@ fn main() -> ! {
 
     ufmt::uwriteln!(&mut serial, "Running!").void_unwrap();
 
+    let mut servo = Servo::new(pins.d3.into_output());
 
     loop {
-        let dist = dist_sensor.get_distance();
-        ufmt::uwriteln!(&mut serial, "Distance: {}", dist).void_unwrap();
-        led.toggle();
-        arduino_hal::delay_ms(1000);
+//        let dist = dist_sensor.get_distance();
+//        ufmt::uwriteln!(&mut serial, "Distance: {}", dist).void_unwrap();
+//        led.toggle();
+//        arduino_hal::delay_ms(1000);
+        for i in [0, 90, 180, 90].iter() {
+            servo.set_angle(*i);
+            ufmt::uwriteln!(&mut serial, "Angle: {}", i).void_unwrap();
+            arduino_hal::delay_ms(1000);
+        }
+
     }
 }
