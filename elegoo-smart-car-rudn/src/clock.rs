@@ -1,4 +1,9 @@
-// Code taken from: https://github.com/Rahix/avr-hal/blob/main/examples/arduino-uno/src/bin/uno-millis.rs
+//! Functions for a real-time measurement of time.
+//! 
+//! Using the TC0 timer, we set up interrupts to measure milliseconds.
+//! You can use the [millis] function to get the time since the program was started.
+//!
+//! Code taken from: https://github.com/Rahix/avr-hal/blob/main/examples/arduino-uno/src/bin/uno-millis.rs
 
 use core::cell;
 
@@ -16,11 +21,14 @@ use core::cell;
 const PRESCALER: u64 = 64;
 const TIMER_COUNTS: u64 = 250;
 
+/// The number of milliseconds that pass between timer overflows.
 const MILLIS_INCREMENT: u64 = PRESCALER * TIMER_COUNTS / 16000;
 
+/// The counter used to keep track of the number of milliseconds.
 static MILLIS_COUNTER: avr_device::interrupt::Mutex<cell::Cell<u64>> =
     avr_device::interrupt::Mutex::new(cell::Cell::new(0));
 
+/// Function to initialize timer TC0's interrupt to increment the millisecond counter.
 pub fn millis_init(tc0: arduino_hal::pac::TC0) {
     // Configure the timer for the above interval (in CTC mode)
     // and enable its interrupt.
@@ -41,6 +49,7 @@ pub fn millis_init(tc0: arduino_hal::pac::TC0) {
     });
 }
 
+/// Function to increment the global millisecond counter on each timer interrupt.
 #[avr_device::interrupt(atmega328p)]
 fn TIMER0_COMPA() {
     avr_device::interrupt::free(|cs| {
@@ -50,6 +59,12 @@ fn TIMER0_COMPA() {
     })
 }
 
+/// Get how many milliseconds have passed since the program started, or since the last timer reset.
 pub fn millis() -> u64 {
     avr_device::interrupt::free(|cs| MILLIS_COUNTER.borrow(cs).get())
+}
+
+/// Set the millisecond counter to zero. 
+pub fn reset_millis() {
+    avr_device::interrupt::free(|cs| MILLIS_COUNTER.borrow(cs).set(0));
 }

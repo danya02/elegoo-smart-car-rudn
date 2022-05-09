@@ -111,12 +111,11 @@ fn main() -> ! {
 //        for i in [0, 90, 180, 90].iter() {
 //            servo.set_angle(*i);
 //            ufmt::uwriteln!(&mut serial, "Angle: {}", i).void_unwrap();
-//            arduino_hal::delay_ms(1000);
+//            arduino_hal::delay_ms(0);
 //        }
 
         let line_pos = line_tracker.measure_full();
         ufmt::uwriteln!(&mut serial, "Line: {:?}", line_pos).void_unwrap();
         arduino_hal::delay_ms(1000);
-
     }
 }

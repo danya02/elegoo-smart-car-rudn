@@ -1,8 +1,10 @@
-// from https://github.com/Rahix/avr-hal/blob/main/examples/arduino-uno/src/bin/uno-panic.rs
+//! Setting up the panic handler that prints the panic message to the serial port.
+//! 
+//! from https://github.com/Rahix/avr-hal/blob/main/examples/arduino-uno/src/bin/uno-panic.rs
 use arduino_hal::prelude::*;
 
 #[panic_handler]
-fn panic(info: &core::panic::PanicInfo) -> ! {
+fn handle_panic(info: &core::panic::PanicInfo) -> ! {
     // disable interrupts - firmware has panicked so no ISRs should continue running
     avr_device::interrupt::disable();
 
