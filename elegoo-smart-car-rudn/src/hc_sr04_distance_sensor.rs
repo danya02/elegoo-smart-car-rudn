@@ -25,18 +25,17 @@ pub struct HC_SR04 {
     tc1: arduino_hal::pac::TC1,
 }
 
-/// A measurement can come back with three states, which are as follows:
-/// 
-/// - `Measured(Distance)`: The measurement was successful, and its [`Distance`] is included.
-/// - `Infinity`: The sensor's Echo pin was high for too long (more than 100ms, which corresponds to a distance of 17 meters),
-///    and we say the distance is too large.
-/// - `Unknown`: When we pulsed the Trig pin, the Echo pin did not go high for a while (750µs),
-///   which means that the sensor didn't react to the pulse.
+/// A measurement can come back with three states, and they are represented by this enum.
 #[derive(uDebug)]
 pub enum DistanceMeasurement {
-    Infinity,
-    Unknown,
+    /// The measurement was successful, and its [`Distance`] is included.
     Measured(Distance),
+    /// The sensor's Echo pin was high for too long (more than 100ms, which corresponds to a distance of 17 meters),
+    /// and we say the distance is too large.
+    Infinity,
+    /// When we pulsed the Trig pin, the Echo pin did not go high for a while (750µs),
+    /// which means that the sensor didn't react to the pulse.
+    Unknown,
 }
 
 /// A value of a distance measurement. Holds the number of timer ticks spent by the echo pin being high.
