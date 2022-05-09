@@ -41,6 +41,89 @@ pub struct LinePosition {
     right: LineState,
 }
 
+/// The direction that the robot is offset from the line.
+pub enum LineBiasDirection {
+    /// The robot only sees the line on the left.
+    VeryLeft,
+    /// The robot sees the line in the center and on the left.
+    SlightlyLeft,
+    /// The robot sees the line only in the center.
+    Center,
+    /// The robot sees the line in the center and on the right.
+    SlightlyRight,
+    /// The robot only sees the line on the right.
+    VeryRight,
+    /// The robot does not see a line.
+    NotOnLine,
+    /// The robot sees a line on all three sensors at the same time.
+    OnPerpendicularLine,
+}
+
+impl LineBiasDirection {
+    /// Converts the line bias direction to a line tracker direction, losing some information.
+    /// 
+    /// Converts `VeryLeft` and `SlightlyLeft` to `Left`, `VeryRight` and `SlightlyRight` to `Right`,
+    /// and everything else to `Center`.
+    pub fn to_line_tracker_direction(self) -> LineTrackerDirection {
+        match self {
+            LineBiasDirection::VeryLeft | LineBiasDirection::SlightlyLeft => LineTrackerDirection::Left,
+            LineBiasDirection::VeryRight | LineBiasDirection::SlightlyRight => LineTrackerDirection::Right,
+            _ => LineTrackerDirection::Center,
+        }
+    }
+}
+
+
+impl LinePosition {
+    /// Returns the direction that the sensor state is pointing to,
+    /// when the robot is following a dark line on a light background.
+    /// 
+    /// When you want to follow a line, you want the line to be visible on the center sensor only.
+    /// If you can see the line on the left or right sensor, you want to compensate
+    /// by turning in the opposite direction.
+    pub fn get_bias_direction_dark(&self) -> LineBiasDirection {
+        match (self.left, self.mid, self.right) {
+            (LineState::Light, LineState::Light, LineState::Dark) => LineBiasDirection::VeryRight,
+            (LineState::Light, LineState::Dark, LineState::Dark) => LineBiasDirection::SlightlyRight,
+            (LineState::Light, LineState::Dark, LineState::Light) => LineBiasDirection::Center,
+            (LineState::Dark, LineState::Dark, LineState::Light) => LineBiasDirection::SlightlyLeft,
+            (LineState::Dark, LineState::Light, LineState::Light) => LineBiasDirection::VeryLeft,
+            
+            (LineState::Light, LineState::Light, LineState::Light) => LineBiasDirection::NotOnLine,
+            (LineState::Dark, LineState::Dark, LineState::Dark) => LineBiasDirection::OnPerpendicularLine,
+
+            // This corresponds to the situation where the robot is on two lines to the left and right.
+            // Usually this will not happen for a robot on a single line, but it is possible,
+            // so this state is interpreted as not being on a line.
+            (LineState::Dark, LineState::Light, LineState::Dark) => LineBiasDirection::NotOnLine,
+        }
+    }
+
+    /// Returns the direction that the sensor state is pointing to,
+    /// when the robot is following a light line on a dark background.
+    /// 
+    /// When you want to follow a line, you want the line to be visible on the center sensor only.
+    /// If you can see the line on the left or right sensor, you want to compensate
+    /// by turning in the opposite direction.
+    pub fn get_bias_direction_light(&self) -> LineBiasDirection {
+        match (self.left, self.mid, self.right) {
+            (LineState::Dark, LineState::Dark, LineState::Light) => LineBiasDirection::VeryRight,
+            (LineState::Dark, LineState::Light, LineState::Light) => LineBiasDirection::SlightlyRight,
+            (LineState::Dark, LineState::Light, LineState::Dark) => LineBiasDirection::Center,
+            (LineState::Light, LineState::Light, LineState::Dark) => LineBiasDirection::SlightlyLeft,
+            (LineState::Light, LineState::Dark, LineState::Dark) => LineBiasDirection::VeryLeft,
+            
+            (LineState::Dark, LineState::Dark, LineState::Dark) => LineBiasDirection::NotOnLine,
+            (LineState::Light, LineState::Light, LineState::Light) => LineBiasDirection::OnPerpendicularLine,
+
+            // This corresponds to the situation where the robot is on two lines to the left and right.
+            // Usually this will not happen for a robot on a single line, but it is possible,
+            // so this state is interpreted as not being on a line.
+            (LineState::Light, LineState::Dark, LineState::Light) => LineBiasDirection::NotOnLine,
+        }
+    }
+}
+
 /// The driver for the line tracker module board, which has three pins corresponding to each one of the three line trackers.
 pub struct LineTracker {
     pin_left: Pin<Input<AnyInput>>,
